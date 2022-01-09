@@ -1,10 +1,11 @@
-import pandas as pd
+import json
+
 # block_id	transaction_hash	index	depth	time
 # failed	fail_reason	type	sender	recipient	child_call_count
 # value	value_usd	transferred	input_hex	output_hex
 import networkx as nx
-from tqdm import tqdm, trange
-import json
+import pandas as pd
+from tqdm import trange
 
 #
 '''
@@ -94,7 +95,7 @@ A->Y functionA
 
 
 def generateGraph(callTxs, A, B):
-    callTxs = callTxs.reset_index(drop=True)  # 重置索引、
+    callTxs = callTxs.reset_index(drop = True)  # 重置索引、
 
     # 根据输入的txs生成有向图
     D = nx.DiGraph()
@@ -106,6 +107,7 @@ def generateGraph(callTxs, A, B):
         sender = callTxs['sender'][i]
         recipient = callTxs['recipient'][i]
         D.add_edge(sender, recipient)
+
     return D
 
 
@@ -113,7 +115,7 @@ def getABAB(txs, hash):
     txs = txs.reset_index(drop=True)  # 重置索引
     list_index = []
     list_senderAndRecipient = []
-    list_input_hex=[]
+    list_input_hex = []
     list_finalOutPut = []
     count = 0  # 记录重复出现path的次数
     for i in range(len(txs)):
@@ -126,13 +128,13 @@ def getABAB(txs, hash):
             txEnd_tmp = [txs['sender'][j], txs['recipient'][j], txs['input_hex'][j][0:8], txs['index'][j]]
             # 交易限制判断
             if (
-                # sender相同
-                (txStart_tmp[0] == txEnd_tmp[0])
-                # 调用的函数相同
-                & (txStart_tmp[2] == txEnd_tmp[2])
-                # index必须是【B以A开头】，保证B调用在A的子调用下面
-                # 这种做法也限制了A和B之间的所有调用必须是子调用，因为数据本身就是按照index从浅到深输出的
-                & (str(txEnd_tmp[3]).startswith(str(txStart_tmp[3]))) & (j - i > 1)):
+                    # sender相同
+                    (txStart_tmp[0] == txEnd_tmp[0])
+                    # 调用的函数相同
+                    & (txStart_tmp[2] == txEnd_tmp[2])
+                    # index必须是【B以A开头】，保证B调用在A的子调用下面
+                    # 这种做法也限制了A和B之间的所有调用必须是子调用，因为数据本身就是按照index从浅到深输出的
+                    & (str(txEnd_tmp[3]).startswith(str(txStart_tmp[3]))) & (j - i > 1)):
 
                 # 记录下相关信息用于输出
                 A = txStart_tmp[0]
@@ -149,7 +151,6 @@ def getABAB(txs, hash):
 
                 # 判断有向图是否存在X->A的通路
                 if nx.has_path(D, X, A):
-
                     # region 聚合输出信息
                     list_senderAndRecipient.append(A)
                     list_senderAndRecipient.append(X)
@@ -176,8 +177,8 @@ def getABAB(txs, hash):
 
                 list_index = []
                 list_senderAndRecipient = []
-                list_finalOutPut=[]
-                list_input_hex=[]
+                list_finalOutPut = []
+                list_input_hex = []
     # if FLAG:
     #     print("^^^^^^^^^^^^^^^^^^txhash：" + hash + "^^^^^^^^^^^^^^^^^^")
 
@@ -208,7 +209,7 @@ if __name__ == '__main__':
         callTxs = callTxs.dropna(axis=0, subset=["transaction_hash", "sender", "recipient"])
         # 消除input_hex为空的情况
         callTxs = callTxs.fillna('ABCDEFGH')
-        callTxs = callTxs[callTxs['input_hex'] != 'ABCDEFGH']  # 筛选掉所有index hex为空的，避免把转账的操作当成调用
+        # callTxs = callTxs[callTxs['input_hex'] != 'ABCDEFGH']  # 筛选掉所有index hex为空的，避免把转账的操作当成调用
 
         # endregion
 
