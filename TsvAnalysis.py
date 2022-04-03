@@ -184,7 +184,7 @@ def getABAB(txs, hash):
 
 
 if __name__ == '__main__':
-    file_path = r'C:\迅雷下载\blockchair_ethereum_calls_20210917.tsv\blockchair_ethereum_calls_20210917.tsv'
+    file_path = r'./thedao_data.tsv'
     # file_path = r'C:\Users\nerbonic\Desktop\new.tsv'
     datas = pd.read_csv(file_path, sep='\t', header=0, index_col=None)
     wp = datas.drop_duplicates(['transaction_hash'])
