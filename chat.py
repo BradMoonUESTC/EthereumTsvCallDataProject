@@ -70,11 +70,11 @@ def chat():
             try:
 
                 res = requests.post(url=url, headers=header, data=json.dumps(msg),proxies={'http': 'http://127.0.0.1:10809', 'https': 'http://127.0.0.1:10809'})
-                # if res.ok == True:
-                #     result = json.loads(res.text)
-                #     url_delete = 'https://discord.com/api/v9/channels/{}/messages/{}'.format(chanel_id, result['id'])
-                #     requests.delete(url=url_delete, headers=header,
-                #                     proxies={'http': 'http://127.0.0.1:10809', 'https': 'http://127.0.0.1:10809'})
+                if res.ok == True:
+                    result = json.loads(res.text)
+                    url_delete = 'https://discord.com/api/v9/channels/{}/messages/{}'.format(chanel_id, result['id'])
+                    requests.delete(url=url_delete, headers=header,
+                                    proxies={'http': 'http://127.0.0.1:10809', 'https': 'http://127.0.0.1:10809'})
                 print(res.content)
             except:
                 pass
