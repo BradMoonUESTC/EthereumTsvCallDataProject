@@ -25,7 +25,7 @@ if __name__ == '__main__':
     currentAddress = coreAddress.currentAddress_cream
 
     # 入度排序还是出度排序
-    inORoutDegree='in_degree'
+    inORoutDegree = 'in_degree'
     if switch_function_flag == 1:
         # region 折线图
         # print(datas)
@@ -125,13 +125,13 @@ if __name__ == '__main__':
             if node in currentAddress_has:
                 labels[node] = node
         # nx.draw(D, with_labels=True, labels=labels)
-        nx.draw_networkx_nodes(D, pos=pos, nodelist=uncurrentAddress1, node_size=30, node_color='blue')# 出度
+        nx.draw_networkx_nodes(D, pos=pos, nodelist=uncurrentAddress1, node_size=30, node_color='blue')  # 出度
         nx.draw_networkx_nodes(D, pos=pos, nodelist=currentAddress_has, node_size=100, node_color='red')
-        nx.draw_networkx_nodes(D, pos=pos, nodelist=uncurrentAddress2, node_size=30, node_color='green')# 入度
+        nx.draw_networkx_nodes(D, pos=pos, nodelist=uncurrentAddress2, node_size=30, node_color='green')  # 入度
         nx.draw_networkx_edges(D, pos=pos, edge_color='grey', width=0.1)
         nx.draw_networkx_labels(D, pos, labels, font_size=16, font_color='red')
         plt.show()
-        #endregion
+        # endregion
 
         # region 入度出度统计
         degrees = pd.DataFrame(columns=['address', 'in_degree', 'out_degree'])
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                 degree_data = {'address': address, 'in_degree': in_degree, 'out_degree': out_degree}
                 degrees = degrees.append(degree_data, ignore_index=True)
 
-        sorted_degrees=degrees.sort_values(inORoutDegree,ascending=False)
+        sorted_degrees = degrees.sort_values(inORoutDegree, ascending=False)
         print(sorted_degrees)
         # nums = datas_ana.sort_values("num", ascending=False)
         # sorted_nums = nums["num"]
@@ -156,13 +156,13 @@ if __name__ == '__main__':
 
     if switch_function_flag == 3:
 
-        #region 全地址检测的折线图
+        # region 全地址检测的折线图
         allAddress = []
         # drop_from_datas=datas.drop_duplicates(subset=['from'],keep='first',inplace=False)#去重from
 
         for i in trange(len(datas)):
-            from_address=datas["from"].values[i]
-            to_address=datas["to"].values[i]
+            from_address = datas["from"].values[i]
+            to_address = datas["to"].values[i]
             allAddress.append(from_address)
             allAddress.append(to_address)
         datas_ana = datas[(datas["from"].isin(allAddress)) | (datas["to"].isin(allAddress))]
@@ -172,21 +172,21 @@ if __name__ == '__main__':
         sorted_nums = sorted_nums.reset_index(drop=True)
         plt.plot(sorted_nums)
         plt.show()
-        #endregion
+        # endregion
 
     if switch_function_flag == 4:
 
-        #region 全地址检测列表生成
+        # region 全地址检测列表生成
         allAddress = []
         for i in trange(len(datas)):
-            from_address=datas["from"].values[i]
-            to_address=datas["to"].values[i]
+            from_address = datas["from"].values[i]
+            to_address = datas["to"].values[i]
             allAddress.append(from_address)
             allAddress.append(to_address)
-        allAddress_DF=pd.DataFrame(allAddress,index=None,columns=['address'])
-        allAddress_DF=allAddress_DF.drop_duplicates()
-        allAddress_DataFrame=allAddress_DF['address']
-        #endregion
+        allAddress_DF = pd.DataFrame(allAddress, index=None, columns=['address'])
+        allAddress_DF = allAddress_DF.drop_duplicates()
+        allAddress_DataFrame = allAddress_DF['address']
+        # endregion
 
         # region 全地址检测的依赖图
         uncurrentAddress1 = []
@@ -280,7 +280,7 @@ if __name__ == '__main__':
         # nx.draw_networkx(D, pos=pos, nodelist=uncurrentAddress2, node_size=50, node_color='green', font_size=1, width=1,with_labels=False)
         # nx.draw_networkx_labels(D, pos, labels, font_size=16, font_color='red')
         plt.show()
-        #endregion
+        # endregion
 
         # region 全地址检测的入度出度统计
         degrees = pd.DataFrame(columns=['address', 'in_degree', 'out_degree'])
@@ -292,7 +292,7 @@ if __name__ == '__main__':
                 degree_data = {'address': address, 'in_degree': in_degree, 'out_degree': out_degree}
                 degrees = degrees.append(degree_data, ignore_index=True)
 
-        sorted_degrees=degrees.sort_values(inORoutDegree,ascending=False)
+        sorted_degrees = degrees.sort_values(inORoutDegree, ascending=False)
         print(sorted_degrees)
         # nums = datas_ana.sort_values("num", ascending=False)
         # sorted_nums = nums["num"]

@@ -8,9 +8,12 @@ matplotlib.use('TkAgg')  # 大小写无所谓 tkaGg ,TkAgg 都行
 import matplotlib.pyplot as plt
 from tqdm import trange
 import coreAddress
+from warnings import simplefilter
+
+simplefilter(action="ignore", category=FutureWarning)
 
 if __name__ == '__main__':
-    file_path = r'defi_branches/Aave'
+    file_path = r'defi_branches/Curve'
     datas = pd.read_csv(file_path, sep='\s', header=None, names=['from', 'fromInput', 'to', 'toInput', 'num'],
                         index_col=None)
     # from fromInput to toInput num
@@ -19,13 +22,13 @@ if __name__ == '__main__':
     switch_function_flag = 2
 
     # 用来根据折线图结果输入阈值
-    threshold = 2500
+    threshold = 400
 
-    # 从入度结果中继续筛选
-    threshold_for_result = 9
+    # 从入度结果中继续筛选，我们认为大于threshold_for_result调用次数的是核心合约
+    threshold_for_result = 3
 
     # 使用哪个核心地址集
-    currentAddress = coreAddress.currentaddress_aave
+    currentAddress = coreAddress.currentaddress_curve
 
     # 入度排序还是出度排序
     inORoutDegree = 'in_degree'
@@ -99,6 +102,7 @@ if __name__ == '__main__':
         nx.draw_networkx_nodes(D, pos=pos, nodelist=uncurrentAddress2, node_size=30, node_color='green')  # 入度
         nx.draw_networkx_edges(D, pos=pos, edge_color='grey', width=0.1)
         # nx.draw_networkx_labels(D, pos, labels, font_size=16, font_color='red')
+        # 画图1
         plt.show()
         # endregion
 
@@ -140,16 +144,9 @@ if __name__ == '__main__':
 
         pos = nx.shell_layout(D_inside)
         labels = {}
-        # for node in D.nodes:
-        #     if node in currentAddress_has:
-        #         labels[node] = node
-        nx.draw(D_inside, with_labels=True)
-        # nx.draw_networkx_nodes(D, pos=pos, nodelist=uncurrentAddress1, node_size=30, node_color='blue')  # 出度
-        # nx.draw_networkx_nodes(D, pos=pos, nodelist=currentAddress_has, node_size=100, node_color='red')
-        # nx.draw_networkx_nodes(D, pos=pos, nodelist=uncurrentAddress2, node_size=30, node_color='green')  # 入度
-        # nx.draw_networkx_edges(D, pos=pos, edge_color='grey', width=0.1)
-        # nx.draw_networkx_labels(D, pos, labels, font_size=16, font_color='red')
-        # plt.show()
+        # 画图2
+        nx.draw(D_inside, pos=pos, with_labels=True)
+        plt.show()
 
         # endregion
 
@@ -166,15 +163,22 @@ if __name__ == '__main__':
         sorted_degrees_inside = degrees_inside.sort_values(inORoutDegree, ascending=False)
         print(sorted_degrees_inside)
         # endregion
+
         # 输出sort_degrees_inside，'address', 'in_degree', 'out_degree'
 
         sorted_degrees_reset_index = sorted_degrees.reset_index(drop=True)
-        #从全调用图种筛出in_degree少的，从而筛出核心合约
-        sorted_degrees_reset_index=sorted_degrees_reset_index[sorted_degrees_reset_index['in_degree']>threshold_for_result]
+        # 从全调用图种筛出in_degree少的，从而筛出核心合约
+        sorted_degrees_reset_index = sorted_degrees_reset_index[
+            sorted_degrees_reset_index['in_degree'] > threshold_for_result]
         print(sorted_degrees_reset_index)
         print('意味着存在那么两种交易1和2，交易1直接调用了A，并且很多，即A是一个核心入口合约')
         print('然而交易2调用合约B也很多，同时A又调用了B，意味着有人绕过了A去调用B，A->B间未存在访问控制')
         print('合约内部调用发起者A\t合约内部调用接收者B')
+
+        # region 0414新增代码功能==>输出疑似骨干合约的下游并拼接==>定义部分
+        # 保存疑似骨干合约地址集
+        coreContractAddress = []
+        # endregion
 
         for i in trange(len(sorted_degrees_reset_index)):
             in_degree = sorted_degrees_reset_index['in_degree'].values[i]
@@ -186,4 +190,88 @@ if __name__ == '__main__':
             for j in range(len(list_remain)):
                 address_compare = list_remain['address'].values[j]
                 if D_inside.has_edge(address_compare, address):
+
+                    # region 添加疑似骨干合约至骨干合约地址集
+                    if address_compare not in coreContractAddress:
+                        coreContractAddress.append(address_compare)
+                    if address not in coreContractAddress:
+                        coreContractAddress.append(address)
+                    # endregion
+
                     print(address_compare, '\t', address)
+
+        # region 先试着把D_inside里面没有出度的节点删掉,
+        # 原因在于，如果没有出度，意味着这个节点永远被人调用，
+        # 极大可能是一个库合约，且不可能是核心合约
+        # 如果是库合约，意味着防火墙逻辑不能往里面插
+        nodelist_inside = []
+        for node in D_inside.nodes:
+            nodelist_inside.append(node)
+        for node in nodelist_inside:
+            if D_inside.out_degree(node) == 0:
+                D_inside.remove_node(node)
+
+        for node in nodelist_inside:
+            if not D_inside.has_node(node):
+                continue
+            if D_inside.in_degree(node) == 0 and D_inside.out_degree(node) == 0:
+                D_inside.remove_node(node)
+        # 画图3
+        nx.draw(D_inside, pos=pos, with_labels=True)
+        plt.show()
+        # endregion
+
+        # 先从新生成的内部调用图中筛去刚才去掉无出度节点之后的【新】核心地址集，也就是说一开始的coreAddress可能有库合约，我们筛掉
+        newCoreContractAddress = []
+        for address in coreContractAddress:
+            if D_inside.has_node(address):
+                newCoreContractAddress.append(address)
+        print(newCoreContractAddress)
+
+        D_child_nodelist_include_weight={}
+        D_child_nodelist=[]
+        D_child = nx.DiGraph()
+        # 从D_inside中依次获取【新】核心地址集（骨干合约）的上游地址路径生成一个子图，初始为每个节点赋一个权重为1
+        # 子图与子图相加，并赋予新权重，比如说时，两个都是权重为1的子图相加，权重为2。每一次相加权重+1
+        # 最后输出整个的图，并只标记【新】核心地址集的权重
+        # 那些没有被标进去的意味着是库合约，他们的权重，就算调用再多我们也不考虑
+        for address in newCoreContractAddress:
+            for node in D_inside.nodes:
+                if D_inside.has_edge(node, address):  # 如果存在通路，添加进子图
+                    if D_child.has_node(node):  # 如果存在节点置权重为+1
+                        D_child_nodelist_include_weight[node]=D_child_nodelist_include_weight[node]+1
+                    if D_child.has_node(address):  # 如果存在节点置权重为+1
+                        D_child_nodelist_include_weight[address]=D_child_nodelist_include_weight[address]+1
+                    if not D_child.has_node(node):  # 如果不存在节点置权重为1
+                        D_child.add_node(node)
+                        D_child_nodelist_include_weight[node]=1
+                        D_child_nodelist.append(node)
+                    if not D_child.has_node(address):  # 如果不存在节点置权重为1
+                        D_child.add_node(address)
+                        D_child_nodelist_include_weight[address]=1
+                        D_child_nodelist.append(address)
+
+                    D_child.add_edge(node, address)
+
+        # 用于标示出权重标签
+        labels = {}
+        for node in D_child.nodes:
+            if node in newCoreContractAddress:
+                labels[node] = D_child_nodelist_include_weight[node]
+        labels_address={}
+        for node in D_child.nodes:
+            if node in D_child_nodelist_include_weight:
+                labels_address[node] = node
+
+        nx.draw_networkx_nodes(D_child, pos=pos, nodelist=D_child_nodelist, node_size=30, node_color='green')  # 入度
+        nx.draw_networkx_edges(D_child, pos=pos, edge_color='grey', width=0.1)
+        nx.draw_networkx_labels(D_child, pos, labels, font_size=30, font_weight=20,font_color='red')
+        nx.draw_networkx_labels(D_child, pos, labels_address, font_size=10, font_weight=20,font_color='blue')
+
+        plt.show()
+
+# def addToD_child(currentNode,D_inside):#获取节点的一级上游节点，并添加至一个新图中
+#     D_ret = nx.DiGraph()
+#     for node in D_inside.nodes:
+#         if D_inside.has_edge(node,currentNode):
+#             D_ret.add_edge()
