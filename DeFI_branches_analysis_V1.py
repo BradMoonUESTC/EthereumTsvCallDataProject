@@ -14,18 +14,20 @@ simplefilter(action="ignore", category=FutureWarning)
 
 if __name__ == '__main__':
     file_path = r'defi_branches/Curve'
+    file_path_middleData = r'Middle_Data/Curve'
+
     datas = pd.read_csv(file_path, sep='\s', header=None, names=['from', 'fromInput', 'to', 'toInput', 'num'],
                         index_col=None)
     # from fromInput to toInput num
 
     # 是否打印图像
-    printPic=True
+    printPic = False
 
     # 切换功能用的：1：用来统计折线图；2：用来进行依赖分析
     switch_function_flag = 2
 
     # 用来根据折线图结果输入阈值
-    threshold = 500
+    threshold = 400
 
     # 从入度结果中继续筛选，我们认为大于threshold_for_result调用次数的是核心合约
     threshold_for_result = 3
@@ -150,7 +152,7 @@ if __name__ == '__main__':
         labels = {}
         # 画图2
         nx.draw(D_inside, pos=pos, with_labels=True)
-        if(printPic):
+        if (printPic):
             plt.show()
 
         # endregion
@@ -171,6 +173,7 @@ if __name__ == '__main__':
 
         # 输出sort_degrees_inside，'address', 'in_degree', 'out_degree'
 
+        # region 结果筛选，叠加判断，输出结果
         sorted_degrees_reset_index = sorted_degrees.reset_index(drop=True)
         # 从全调用图种筛出in_degree少的，从而筛出核心合约
         sorted_degrees_reset_index = sorted_degrees_reset_index[
@@ -223,7 +226,7 @@ if __name__ == '__main__':
                 D_inside.remove_node(node)
         # 画图3
         nx.draw(D_inside, pos=pos, with_labels=True)
-        if(printPic):
+        if (printPic):
             plt.show()
         # endregion
 
@@ -274,7 +277,7 @@ if __name__ == '__main__':
         nx.draw_networkx_labels(D_child, pos, labels, font_size=30, font_weight=20, font_color='red')
         nx.draw_networkx_labels(D_child, pos, labels_address, font_size=10, font_weight=20, font_color='blue')
 
-        if(printPic):
+        if (printPic):
             plt.show()
 
         # 算上初始权重
@@ -299,11 +302,41 @@ if __name__ == '__main__':
         nx.draw_networkx_labels(D_child, pos, labels, font_size=30, font_weight=20, font_color='red')
         nx.draw_networkx_labels(D_child, pos, labels_address, font_size=10, font_weight=20, font_color='blue')
 
+        # endregion
+
         if printPic:
             plt.show()
         print("——————————————————————最终结果，我们怀疑的可以进行防火墙逻辑插入的核心合约——————————————————————")
         print(labels)
         print("——————————————————————接下来，我们将会对这些合约地址基于交易元数据进行多维度评估，其中，覆盖率是一个重要的指标——————————————————————")
+
+        datas_middle = pd.read_csv(file_path_middleData, sep='|', header=None,
+                            names=['hash', 'date', 'from', 'fromFunction', 'to', 'toFunction', 'callType', 'count'],
+                            index_col=None)
+        allSum = 0
+        labels_data = {}
+        for i in trange(len(datas_middle)):
+            count = datas_middle["count"].values[i]
+            fromAddress = datas_middle["from"].values[i]
+            toAddress=datas_middle["to"].values[i]
+            currentCount=datas_middle["count"].values[i]
+            allSum = allSum + count
+            if fromAddress in newCoreContractAddress and fromAddress in labels_data:
+                labels_data[fromAddress]=labels_data[fromAddress]+currentCount
+            elif fromAddress in newCoreContractAddress and fromAddress not in labels_data:
+                labels_data[fromAddress]=currentCount
+
+            if toAddress in newCoreContractAddress and toAddress in labels_data:
+                labels_data[toAddress]=labels_data[toAddress]+currentCount
+            elif toAddress in newCoreContractAddress and toAddress not in labels_data:
+                labels_data[toAddress]=currentCount
+        # 去重 统计有多少不同的交易
+        datas_drop_duplicates=datas_middle.drop_duplicates(subset='hash')
+        print("共有交易数量："+str(len(datas_middle)))
+
+        print("共有调用数量："+str(allSum))
+        print("核心地址集调用数量：")
+        print(labels_data)
 
 # def addToD_child(currentNode,D_inside):#获取节点的一级上游节点，并添加至一个新图中
 #     D_ret = nx.DiGraph()
