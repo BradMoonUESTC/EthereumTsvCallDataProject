@@ -1,7 +1,7 @@
 import pandas as pd
 if __name__ == '__main__':
     list_all = []
-    with open(r'C:\Users\nerbonic\Desktop\聚合了202004182020091720200713三天的数据.txt', 'r', encoding='utf-8') as f:
+    with open(r'test.txt', 'r', encoding='utf-8') as f:
         list_child = []
         count=0
         line=f.readlines()[0]

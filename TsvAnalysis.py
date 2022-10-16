@@ -184,7 +184,8 @@ def getABAB(txs, hash):
 
 
 if __name__ == '__main__':
-    file_path = r'./thedao_data.tsv'
+    print("加载数据中.....")
+    file_path = r'./ddd.tsv'
     # file_path = r'C:\Users\nerbonic\Desktop\new.tsv'
     datas = pd.read_csv(file_path, sep='\t', header=0, index_col=None)
     wp = datas.drop_duplicates(['transaction_hash'])
@@ -192,10 +193,13 @@ if __name__ == '__main__':
     list_paths = []
     list_blocknum = []
     flag = 0
+    print("数据加载完成")
     for i in trange(len(wp['transaction_hash'].values)):
 
         hash = wp['transaction_hash'].values[i]
         blockNum = wp['block_id'].values[i]
+        # if 13462924 > blockNum > 13462926:
+        #     continue
         if blockNum not in list_blocknum:
             list_blocknum.append(blockNum)
             print(blockNum)

@@ -13,8 +13,8 @@ from warnings import simplefilter
 simplefilter(action="ignore", category=FutureWarning)
 
 if __name__ == '__main__':
-    file_path = r'defi_branches/Curve'
-    file_path_middleData = r'Middle_Data/Curve'
+    file_path = r'defi_branches/Cream'
+    file_path_middleData = r'Middle_Data/Cream'
 
     datas = pd.read_csv(file_path, sep='\s', header=None, names=['from', 'fromInput', 'to', 'toInput', 'num'],
                         index_col=None)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     threshold_for_result = 3
 
     # 使用哪个核心地址集
-    currentAddress = coreAddress.currentaddress_curve
+    currentAddress = coreAddress.currentAddress_cream
 
     # 入度排序还是出度排序
     inORoutDegree = 'in_degree'
@@ -310,31 +310,36 @@ if __name__ == '__main__':
         print(labels)
         print("——————————————————————接下来，我们将会对这些合约地址基于交易元数据进行多维度评估，其中，覆盖率是一个重要的指标——————————————————————")
 
+        # region 覆盖率检查
         datas_middle = pd.read_csv(file_path_middleData, sep='|', header=None,
-                            names=['hash', 'date', 'from', 'fromFunction', 'to', 'toFunction', 'callType', 'count'],
-                            index_col=None)
+                                   names=['hash', 'date', 'from', 'fromFunction', 'to', 'toFunction', 'callType',
+                                          'count'],
+                                   index_col=None)
         allSum = 0
         labels_data = {}
+        labels_data_only_count_one = {}  # 地址在一个交易中出现，只按一次计算
         for i in trange(len(datas_middle)):
             count = datas_middle["count"].values[i]
             fromAddress = datas_middle["from"].values[i]
-            toAddress=datas_middle["to"].values[i]
-            currentCount=datas_middle["count"].values[i]
+            toAddress = datas_middle["to"].values[i]
+            currentCount = datas_middle["count"].values[i]
             allSum = allSum + count
             if fromAddress in newCoreContractAddress and fromAddress in labels_data:
-                labels_data[fromAddress]=labels_data[fromAddress]+currentCount
+                labels_data[fromAddress] = labels_data[fromAddress] + currentCount
             elif fromAddress in newCoreContractAddress and fromAddress not in labels_data:
-                labels_data[fromAddress]=currentCount
+                labels_data[fromAddress] = currentCount
 
             if toAddress in newCoreContractAddress and toAddress in labels_data:
-                labels_data[toAddress]=labels_data[toAddress]+currentCount
+                labels_data[toAddress] = labels_data[toAddress] + currentCount
             elif toAddress in newCoreContractAddress and toAddress not in labels_data:
-                labels_data[toAddress]=currentCount
+                labels_data[toAddress] = currentCount
         # 去重 统计有多少不同的交易
-        datas_drop_duplicates=datas_middle.drop_duplicates(subset='hash')
-        print("共有交易数量："+str(len(datas_middle)))
+        datas_drop_duplicates = datas_middle.drop_duplicates(subset='hash')
 
-        print("共有调用数量："+str(allSum))
+        # endregion
+        print("共有交易数量：" + str(len(datas_middle)))
+
+        print("共有调用数量：" + str(allSum))
         print("核心地址集调用数量：")
         print(labels_data)
 
